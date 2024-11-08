@@ -1,0 +1,26 @@
+Hazo Solutions is the blockchain technology for the cannabis industry. Hazo Solutions is building a transparent and distributed ecosystem to connect all stakeholders in the industry - growers, processors, dispensaries, consumers, doctors, and insurance and government compliance regulators. Providing a robust and secure infrastructure, enterprise solutions, turnkey bundles, and tools for software and hardware developers. Hazo Solutions will allow it’s business partners and developers to adapt secure blockchain solutions to a sustainable and powerful ecosystem that capitalizes on the industry’s rapid growth and transformation. Hazo Solutions will use a two-token system, Hazo(HAZO) and Ravina(RAV), to help separate the cost of using the blockchain from market speculation. The Ravina Blockchain Protocol will be a Blockchain-as-a-Service(BaaS) offering seed to sale lifecycle tracking, inventory management, logistics, payment processing, supply chain, customer support, data storage, and data and process certification, enhancing business and product perception and value. The HAZO token will be the utility token of the ecosystem and the RAV token will be the stable token that keeps the gas costs and velocity in check by maintaining an equilibrium between supply and demand of RAV. The Ravina Blockchain Protocol will be run by Proof of Authority nodes that are controlled by built in smart contracts so forks will be avoided, if authority masternodes fail to upgrade.The Ravina Blockchain Protocol requires less power computation, than most blockchains, to achieve consensus integrity and security.
+
+				       TOKENOMICS
+Symbol                 				HAZO
+Total Supply	      			              420,420,420 (this is locked in)
+Exchange LP(Locked for 2 years)     	  210,210,210
+Launchpad Pre-Sale	     			    50,000,000
+Marketing Campaign                                       34,210,210
+Future Partnerships/Market Expansion         63,000,000			    
+Team(Vested - 25% unlock each year)	    63,000,000
+
+Once the Ravina Blockchain Protocol is launched, all wallets that hold HAZO will generate RAV at a predetermined velocity. Both HAZO and RAV will hold value and be tradable, with RAV supply being able to be adjusted for stability. With each block confirmation 75% of all RAV gas fees will be burned with the other 25% awarded to the node operator that confirms the block. HAZO token holders will be able to engage in activities on the Protocol, such as staking, providing liquidity to 
+Qsearn RAV rewards, and allow HAZO to back defi loans to cannabis businesses that can’t use traditional banking for funding.
+		
+
+
+
+Items that still need to be considered: 
+
+1. I was thinking of building it on the Binance Smart Chain but am open to your suggestion if you feel there is a better option.
+
+    2. Should we mint a large number of tokens initially and burn tokens until we reach our final max supply or just mint our max supply? I've been going back and forth on this. -  420,420,420
+ 
+    3. Should we build our own ecosystem or piggyback off of an existing one?
+
+    4. Do you have a recommended Launchpad for the presale and IDO? Thoughts on even doing a presale since we'd most likely need to block US investors. 

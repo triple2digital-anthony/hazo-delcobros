@@ -1,0 +1,19 @@
+from ultralytics import settings
+
+settings.update({
+    "datasets_dir": "/Users/anthonydiprizio/Downloads/SafeSiteY8_0.1.102.Demo"
+})
+
+# Path to your dataset directory (absolute path)
+path: /Users/anthonydiprizio/Downloads/SafeSiteY8_0.1.102.Demo/Weapon2.v2i.yolov8  # Root directory
+train: train/images  # Training images folder
+val: test/images    # Validation/test images folder
+
+# Classes
+names:
+  0: weapon
+
+# Parameters
+nc: 1  # number of classes
+task: detect
+batch: 8  # Reduce from 16 to 8
