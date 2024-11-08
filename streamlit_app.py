@@ -74,6 +74,17 @@ if 'kyc_documents' not in st.session_state:
     st.session_state.kyc_documents = {}
 
 # Wallet connection simulation
+def get_wallet_display():
+    try:
+        if 'connected_wallet' in st.session_state and st.session_state.connected_wallet:
+            wallet = st.session_state.connected_wallet
+            if isinstance(wallet, dict) and 'address' in wallet:
+                address = wallet['address']
+                return f"{address[:6]}...{address[-4:]}"
+    except:
+        pass
+    return 'Unknown'
+
 def connect_wallet(wallet_type):
     wallet_addresses = {
         'Phantom': '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
@@ -196,14 +207,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Create tabs - now with 7 tabs including Historical Transactions
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "💰 Wallet", 
     "🔗 Supply Chain", 
     "📊 Tokenomics", 
     "🏦 Staking", 
     "⚡ Solana Features",
     "🔐 Account & KYC",
-    "📜 Historical Transactions"
+    "📜 Historical Transactions",
+    "📈 ROI Analysis"
 ])
 
 with tab1:
@@ -463,13 +475,18 @@ with tab4:
         st.markdown("### Stake HAZO")
         stake_amount = st.number_input(
             "Amount to Stake", 
-            min_value=0.0, 
+            min_value=0.0,
             max_value=float(st.session_state.hazo_balance),
-            value=100.0,
-            step=1.0
+            value=min(100.0, float(st.session_state.hazo_balance)),
+            step=1.0,
+            key="stake_amount_input"
         )
-        stake_period = st.selectbox("Staking Period", ["30 Days", "90 Days", "180 Days", "365 Days"])
-        if st.button("Stake HAZO"):
+        stake_period = st.selectbox(
+            "Staking Period", 
+            ["30 Days", "90 Days", "180 Days", "365 Days"],
+            key="stake_period_select"
+        )
+        if st.button("Stake HAZO", key="stake_hazo_button"):
             if stake_amount <= st.session_state.hazo_balance:
                 st.session_state.hazo_balance -= stake_amount
                 log_event(f"""
@@ -497,19 +514,84 @@ with tab5:
     
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("### Quick Swap")
-        swap_from = st.selectbox("From", ["HAZO", "RAV", "SOL"])
-        swap_to = st.selectbox("To", ["SOL", "HAZO", "RAV"])
-        swap_amount = st.number_input("Amount", min_value=0.0, value=1.0)
+        # Add Token Swap section
+        st.markdown("### Token Swap")
+        swap_from = st.selectbox("From Token", ["HAZO", "RAV", "SOL"], key="swap_from")
+        swap_to = st.selectbox("To Token", ["SOL", "HAZO", "RAV"], key="swap_to")
         
+        # Add amount input with balance display
+        max_amount = {
+            "HAZO": st.session_state.hazo_balance,
+            "RAV": st.session_state.rav_balance,
+            "SOL": st.session_state.sol_balance
+        }[swap_from]
+        
+        swap_amount = st.number_input(
+            "Amount", 
+            min_value=0.0,
+            max_value=float(max_amount),
+            value=1.0,
+            key="swap_amount"
+        )
+        
+        # Show estimated output with loading animation
+        if swap_amount > 0:
+            with st.spinner("Calculating best route..."):
+                time.sleep(1)  # Simulate price calculation
+                est_output = swap_amount * 1.5  # Simplified price calculation
+                
+            st.markdown(f"""
+            **Estimated Output:** {est_output:.4f} {swap_to}
+            - Price Impact: 0.05%
+            - Minimum Received: {est_output * 0.995:.4f} {swap_to}
+            - Network Fee: ~0.00001 SOL
+            """)
+        
+        # Add swap button with loading animation
         if st.button("Swap Tokens"):
-            log_event(f"""
-            SWAP EXECUTED
-            From: {swap_amount:,.2f} {swap_from}
-            To: {swap_amount * 1.5:,.2f} {swap_to}
-            Rate: 1 {swap_from} = 1.5 {swap_to}
-            """, "transaction")
-            
+            with st.spinner("Processing swap..."):
+                time.sleep(2)  # Simulate blockchain delay
+                
+                # Log the swap transaction
+                log_event(f"""
+                TOKEN SWAP EXECUTED
+                From: {swap_amount:.4f} {swap_from}
+                To: {est_output:.4f} {swap_to}
+                Price Impact: 0.05%
+                Network Fee: 0.00001 SOL
+                """, "transaction")
+                
+                # Update balances
+                if swap_from == "HAZO":
+                    st.session_state.hazo_balance -= swap_amount
+                elif swap_from == "RAV":
+                    st.session_state.rav_balance -= swap_amount
+                else:
+                    st.session_state.sol_balance -= swap_amount
+                
+                if swap_to == "HAZO":
+                    st.session_state.hazo_balance += est_output
+                elif swap_to == "RAV":
+                    st.session_state.rav_balance += est_output
+                else:
+                    st.session_state.sol_balance += est_output
+                
+                # Show success message
+                st.success("✅ Swap Completed Successfully!")
+                
+                # Display transaction details in expandable section
+                with st.expander("Transaction Details", expanded=True):
+                    st.markdown(f"""
+                    ### Swap Details
+                    - **Amount In:** {swap_amount:.4f} {swap_from}
+                    - **Amount Out:** {est_output:.4f} {swap_to}
+                    - **Price Impact:** 0.05%
+                    - **Route:** {swap_from} → {swap_to}
+                    - **Network:** Solana
+                    - **Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                    - **Status:** Confirmed
+                    """)
+
     with col2:
         st.markdown("### Solana Network Stats")
         st.markdown("""
@@ -585,7 +667,7 @@ with tab5:
                 - **Initial Supply:** 1,000,000
                 - **Network:** Solana Devnet
                 - **Standard:** SPL Token
-                - **Creator:** `{st.session_state.connected_wallet['address'][:6]}...{st.session_state.connected_wallet['address'][-4:] if st.session_state.connected_wallet else 'Unknown'}`
+                - **Creator:** `{get_wallet_display()}`
                 - **Creation Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 
                 ### Token Features
@@ -613,67 +695,80 @@ with tab5:
             custom_address = st.text_input("Enter Destination Address")
             
         if st.button("Mint Tokens"):
-            tx_hash = f"Bx7z{random.randint(1000,9999)}...{random.randint(1000,9999)}"
-            
-            log_message = f"""
-            TOKEN MINTING
-            Amount: {mint_amount:,} tokens
-            Destination: {destination}
-            Transaction Hash: {tx_hash}
-            Gas Fee: {random.uniform(0.001, 0.005):.6f} SOL
-            Block: {random.randint(100000000, 999999999)}
-            """
-            log_event(log_message, "success")
-            
-            # Add UI feedback with expandable details
-            with st.expander("✅ Tokens Minted Successfully", expanded=True):
+            with st.spinner("Minting tokens..."):
+                # Simulate minting process
+                time.sleep(2)  # Simulated delay
+                
+                # Log the minting transaction
+                log_event("Minting 1,000 HAZO tokens", level="transaction")
+                
+                # Update balance
+                st.session_state.hazo_balance += 1000
+                
+                # Show success message
+                st.success("✅ Tokens Minted Successfully")
+                
+                # Display transaction details
                 st.markdown(f"""
-                ### Transaction Details
-                **Basic Information**
-                - **Amount:** {mint_amount:,} tokens
-                - **Destination:** {destination}
-                - **Transaction Hash:** `{tx_hash}`
-                - **Status:** Confirmed ✅
-                - **Time:** {datetime.now().strftime('%H:%M:%S')}
-                
-                **Technical Details**
+                ### Minting Details
+                - **Amount:** 1,000 HAZO
+                - **Recipient:** `{get_wallet_display()}`
                 - **Network:** Solana Devnet
-                - **Block Number:** {random.randint(100000000, 999999999)}
-                - **Gas Fee:** {random.uniform(0.001, 0.005):.6f} SOL
-                - **Confirmation Blocks:** 32
-                
-                **Token Metrics Post-Mint**
-                - **Total Supply:** {mint_amount + 1000000:,} tokens
-                - **Circulating Supply:** {mint_amount:,} tokens
-                - **Holder Count:** {random.randint(100, 999)}
-                
-                **View Transaction**
-                ```
-                https://explorer.solana.com/tx/{tx_hash}
-                ```
+                - **Transaction Hash:** `{str(uuid.uuid4())}`
+                - **Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 """)
             
     with col3:
         st.markdown("#### Token Burning")
         burn_amount = st.number_input("Burn Amount", min_value=0)
         if st.button("Burn Tokens"):
-            tx_hash = f"Cx8y...0Z5l"  # Simulated transaction hash
-            log_message = f"""
-            TOKEN BURNING
-            Amount: {burn_amount:,} tokens
-            Transaction Hash: {tx_hash}
-            """
-            log_event(log_message, "success")
-            
-            # Add UI feedback
-            with st.expander("🔥 Tokens Burned Successfully", expanded=True):
+            with st.spinner("Burning tokens..."):
+                time.sleep(2)  # Simulate burning process
+
+                # Log the burning transaction
+                log_event("Burning 1,000 HAZO tokens", level="transaction")
+
+                # Update balance
+                st.session_state.hazo_balance -= 1000
+
+                # Show success message
+                st.success("✅ Tokens Burned Successfully")
+
+                # Display transaction details
                 st.markdown(f"""
-                **Amount:** {burn_amount:,} tokens
-                **Transaction Hash:** `{tx_hash}`
-                **Status:** Confirmed
-                **Time:** {datetime.now().strftime('%H:%M:%S')}
+                ### Burning Details
+                - **Amount:** 1,000 HAZO
+                - **Burned From:** `{get_wallet_display()}`
+                - **Network:** Solana Devnet
+                - **Transaction Hash:** `{str(uuid.uuid4())}`
+                - **Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 """)
-            
+
+                # Add the same diamond celebration animation
+                rain(
+                    emoji="💎",
+                    font_size=150,
+                    falling_speed=500,
+                    animation_length=0.1
+                )
+
+                # Quick follow-up bursts
+                for _ in range(2):
+                    rain(
+                        emoji="💎",
+                        font_size=100,
+                        falling_speed=400,
+                        animation_length=0.05
+                    )
+
+                # Final sustained shower
+                rain(
+                    emoji="💎",
+                    font_size=80,
+                    falling_speed=300,
+                    animation_length=0.05
+                )
+
     st.markdown("### Solana Program Deployment")
     col1, col2 = st.columns(2)
     with col1:
@@ -881,7 +976,7 @@ with tab7:
             'Function': ['stake()', 'addLiquidity()', 'vote()', 'listNFT()', 'bridge()'],
             'Caller': ['0x' + ''.join(random.choices('0123456789abcdef', k=8)) + '...' for _ in range(5)],
             'Gas Used': [random.randint(50000, 200000) for _ in range(5)],
-            'Success': ['✅'] * 4 + ['⏳'],
+            'Success': [''] * 4 + ['⏳'],
             'Block': [random.randint(1000000, 9999999) for _ in range(5)]
         })
         
@@ -900,3 +995,134 @@ with tab7:
         st.selectbox("Filter by Type", ["All Types", "Transfers", "Mints", "Burns", "Stakes", "Swaps"], key="hist_type")
     with col3:
         st.selectbox("Filter by Status", ["All Statuses", "Confirmed", "Pending", "Failed"], key="hist_status")
+
+with tab8:
+    st.subheader("🎯 Investment ROI Analysis")
+    
+    # Create two columns for different ROI metrics
+    roi_col1, roi_col2 = st.columns(2)
+    
+    with roi_col1:
+        st.markdown("### Token Investment Metrics")
+        
+        # Investment simulation inputs
+        initial_investment = st.number_input(
+            "Initial Investment (USD)", 
+            min_value=100.0,
+            value=10000.0,
+            step=100.0,
+            key="roi_investment_input"
+        )
+        
+        investment_period = st.slider(
+            "Investment Period (Months)",
+            min_value=1,
+            max_value=48,
+            value=12,
+            key="roi_period_slider"
+        )
+        
+        # Calculate projected returns based on tokenomics
+        projected_hazo_price = 0.15  # Initial HAZO price
+        projected_growth = 1.2  # 20% projected growth rate
+        rav_generation_rate = 0.05  # 5% RAV generation rate
+        
+        # Calculate projected values
+        hazo_tokens = initial_investment / projected_hazo_price
+        projected_hazo_value = hazo_tokens * (projected_hazo_price * (1 + projected_growth) ** (investment_period/12))
+        projected_rav_generation = hazo_tokens * rav_generation_rate * investment_period
+        
+        total_projected_value = projected_hazo_value + projected_rav_generation
+        roi_percentage = ((total_projected_value - initial_investment) / initial_investment) * 100
+        
+        # Display metrics
+        st.metric(
+            "Projected ROI",
+            f"{roi_percentage:.2f}%",
+            f"${total_projected_value - initial_investment:,.2f}"
+        )
+        
+        # Create ROI breakdown chart
+        roi_breakdown = {
+            'HAZO Value': projected_hazo_value,
+            'RAV Generation': projected_rav_generation
+        }
+        
+        fig = go.Figure(data=[
+            go.Bar(
+                x=list(roi_breakdown.keys()),
+                y=list(roi_breakdown.values()),
+                marker_color=['#4CAF50', '#81C784']
+            )
+        ])
+        
+        fig.update_layout(
+            title="Projected Return Breakdown",
+            yaxis_title="Value (USD)",
+            height=300
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with roi_col2:
+        st.markdown("### Staking & Yield Analysis")
+        
+        # Staking simulation
+        staking_amount = st.number_input(
+            "Staking Amount (HAZO)",
+            min_value=100.0,
+            value=5000.0,
+            step=100.0,
+            key="roi_staking_amount"
+        )
+        
+        staking_period = st.selectbox(
+            "Staking Period",
+            ["30 Days", "90 Days", "180 Days", "365 Days"],
+            key="roi_staking_period"
+        )
+        
+        # APY rates based on staking period
+        apy_rates = {
+            "30 Days": 12,
+            "90 Days": 15,
+            "180 Days": 18,
+            "365 Days": 22
+        }
+        
+        selected_apy = apy_rates[staking_period]
+        days = int(staking_period.split()[0])
+        
+        # Calculate staking returns
+        staking_return = staking_amount * (1 + selected_apy/100 * days/365)
+        staking_profit = staking_return - staking_amount
+        
+        # Display staking metrics
+        st.metric(
+            "Staking APY",
+            f"{selected_apy}%",
+            f"+{staking_profit:.2f} HAZO"
+        )
+        
+        # Create staking projection chart
+        periods = list(range(days + 1))
+        values = [staking_amount * (1 + selected_apy/100 * d/365) for d in periods]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=periods,
+            y=values,
+            fill='tozeroy',
+            fillcolor='rgba(76, 175, 80, 0.2)',
+            line=dict(color='#4CAF50'),
+            name='Staking Value'
+        ))
+        
+        fig.update_layout(
+            title=f"Projected Staking Growth ({staking_period})",
+            xaxis_title="Days",
+            yaxis_title="HAZO Tokens",
+            height=300
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
